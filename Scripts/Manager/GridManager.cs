@@ -47,6 +47,28 @@ public partial class GridManager : Node
             // parameter that is the current grid position the for loop is getting for us
             highlightTileMapLayer.SetCell(tilePosition, 0, Vector2I.Zero);
 		}
+	}
+
+
+	public void HighlightExpandedBuildableTiles(Vector2I rootCell, int radius)
+	{
+		ClearHighlightedTiles();
+		HighlightBuildableTiles();
+
+		HashSet<Vector2I> validTiles = GetValidTilesInRadius(rootCell, radius).ToHashSet();
+
+		IEnumerable<Vector2I> expandedTiles = validTiles.Except(validBuildableTiles)
+			.Except(GetOccupiedTiles());
+
+		Vector2I atlasCoords = new Vector2I(1, 0);
+
+		// foreach (Vector2I tilePosition in expandedTiles)
+		// {
+        //     highlightTileMapLayer.SetCell(tilePosition, 0, atlasCoords);
+		// }
+
+		// The same ForEach loop above written in LINQ
+		expandedTiles.ToList().ForEach(tilePosition => highlightTileMapLayer.SetCell(tilePosition, 0, atlasCoords));
 	}	
 
 
@@ -71,22 +93,47 @@ public partial class GridManager : Node
 	private void UpdateValidBuildableTiles(BuildingComponent buildingComponent)
 	{
 		Vector2I rootCell = buildingComponent.GetGridCellPosition();
+		List<Vector2I> validTiles = GetValidTilesInRadius(rootCell, buildingComponent.BuildableRadius);
 
-		for (var x = rootCell.X - buildingComponent.BuildableRadius; x <= 
-				rootCell.X + buildingComponent.BuildableRadius; x++)
-        {
-            for (var y = rootCell.Y - buildingComponent.BuildableRadius; y <= 
-					rootCell.Y + buildingComponent.BuildableRadius; y++)
-            {
-				Vector2I tilePosition = new Vector2I(x, y);
+		validBuildableTiles.UnionWith(validTiles);
+		
+		validBuildableTiles.ExceptWith(GetOccupiedTiles());
+	}
+
+
+	private List<Vector2I> GetValidTilesInRadius(Vector2I rootCell, int radius)
+	{
+		// List<Vector2I> result = new List<Vector2I>();
+		// for (var x = rootCell.X - radius; x <= rootCell.X + radius; x++)
+        // {
+        //     for (var y = rootCell.Y - radius; y <= rootCell.Y + radius; y++)
+        //     {
+		// 		Vector2I tilePosition = new Vector2I(x, y);
 				
-				if (!IsTilePositionValid(tilePosition)) continue;
+		// 		if (!IsTilePositionValid(tilePosition)) continue;
 
-				validBuildableTiles.Add(tilePosition);
-            }
-        }
+		// 		result.Add(tilePosition);
+        //     }
+        // }
+		// return result;
 
-		validBuildableTiles.Remove(buildingComponent.GetGridCellPosition());
+		// Bellow is the same as the above but written with LINQ
+		return Enumerable.Range(rootCell.X - radius, radius * 2 + 1)
+        .SelectMany(x => Enumerable.Range(rootCell.Y - radius, radius * 2 + 1)
+        .Select(y => new Vector2I(x, y)))
+        .Where(tilePosition => IsTilePositionValid(tilePosition))
+        .ToList();
+	}
+
+ 
+	private IEnumerable<Vector2I> GetOccupiedTiles()
+	{
+		IEnumerable<BuildingComponent> buildingComponents = GetTree().GetNodesInGroup(nameof(BuildingComponent))
+			.Cast<BuildingComponent>();
+		
+		IEnumerable<Vector2I> occupiedTiles = buildingComponents.Select(x => x.GetGridCellPosition());
+
+		return occupiedTiles;
 	}
 
 
