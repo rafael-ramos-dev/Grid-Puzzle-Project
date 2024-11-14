@@ -119,10 +119,10 @@ public partial class GridManager : Node
 
 		// Bellow is the same as the above but written with LINQ
 		return Enumerable.Range(rootCell.X - radius, radius * 2 + 1)
-        .SelectMany(x => Enumerable.Range(rootCell.Y - radius, radius * 2 + 1)
-        .Select(y => new Vector2I(x, y)))
-        .Where(tilePosition => IsTilePositionValid(tilePosition))
-        .ToList();
+        	.SelectMany(x => Enumerable.Range(rootCell.Y - radius, radius * 2 + 1)
+        	.Select(y => new Vector2I(x, y)))
+        	.Where(tilePosition => IsTilePositionValid(tilePosition))
+        	.ToList();
 	}
 
  
